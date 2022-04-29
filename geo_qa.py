@@ -5,19 +5,30 @@ import rdflib
 
 # TODO: Main problems: 
 # Retrival: 
-#   1) Gibrish URL that cause gibrish names (none standart letters)
+#   1) [ ] - Gibrish URL that cause gibrish names (none standart letters) - TODO: Ofer -  Use encoding utf-8 and parse using urlib.parse.quete? [https://moodle.tau.ac.il/mod/forum/discuss.php?d=92883]
 #       a) Countries: /wiki/s%c3%a3o_tom%c3%a9_and_pr%c3%adncipe (São Tomé and Príncipe - 187), /wiki/cura%c3%a7ao (Curaçao (Netherlands) - 192)
 #       b) Names: andr%c3%a9s_manuel_l%c3%b3pez_obrador
 #       c) Capitals: "bras%c3%adlia" -> should be Brasília
-#   2) Countries list: Missing 3 countries (Western_Sahara 170, Channel_Islands 190, Afghanistan 37)
-#   3) Population: Set standart with "," and not "."
-#   4) Date of birth: Set standart as "1966-04-28" and not "28_april_1966" - use dateutil package?
-#   5) Area: Set standart as "923,769 km" (nigeria) and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states)
-#   6) Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
-#   7) Countries/Capitals: Dictionary for countries and capitals with several names (US, U.S, United states, Washngton, Washingon D.C...)
-#   8) Capital:philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? 
-
-
+#   2) [ ] - Countries list: Missing 3 countries (Western_Sahara 170, Channel_Islands 190, Afghanistan 37)
+#   3) Population: 
+#       a) [ ] - Set standart with "," and not "."
+#       b) [ ] - Take the first population found in infobox [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
+#   4) Date of birth: 
+#       a) [ ] - Set standart as "1966-04-28" and not "28_april_1966" - use dateutil package?
+#       b) [ ] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
+#   5) [ ] - Area: Set standart as "923,769 km squared" with miles and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=93424]
+#   6) [ ] - Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
+#   7) [ ] - Countries/Capitals: Dictionary for countries and capitals with several names (US, U.S, United states, Washngton, Washingon D.C...)
+#   8) [ ] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? 
+#   9) Place of birth:
+#       [ ] - a) create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
+#       [ ] - b) TODO: Do we need to expand US, USA to united states? wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
+#   10) [ ] - Multiple result - sortlaksi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
+#   11) [ ] - empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
+#       TODO: Tom - for now I ignore it, we you want to set somthing otherwise for debug let me know :)
+#   12) [ ] - If data is not in info box itdoesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
+#   13) [ ] - packeges - can be use with "BeautifulSoup" and "dateutil" if needed
+#   14) [ ] - TODO: Format of result wair for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
 
 # ---------------------------------------- CONSTANTS ----------------------------------------
 CREATE_ARGV           = "create"
