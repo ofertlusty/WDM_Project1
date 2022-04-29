@@ -18,17 +18,16 @@ import rdflib
 #       b) [ ] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
 #   5) [ ] - Area: Set standart as "923,769 km squared" with miles and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=93424]
 #   6) [ ] - Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
-#   7) [ ] - Countries/Capitals: Dictionary for countries and capitals with several names (US, U.S, United states, Washngton, Washingon D.C...)
-#   8) [ ] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? 
-#   9) Place of birth:
-#       [ ] - a) create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
+#   7) [ ] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? 
+#   8) Place of birth:
+#       [ ] - a) Create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
 #       [ ] - b) TODO: Do we need to expand US, USA to united states? wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
-#   10) [ ] - Multiple result - sortlaksi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
-#   11) [ ] - empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
+#   9)  [ ] - Multiple result - sortlaksi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
+#   10) [ ] - empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
 #       TODO: Tom - for now I ignore it, we you want to set somthing otherwise for debug let me know :)
-#   12) [ ] - If data is not in info box itdoesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
-#   13) [ ] - packeges - can be use with "BeautifulSoup" and "dateutil" if needed
-#   14) [ ] - TODO: Format of result wair for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
+#   11) [ ] - If data is not in info box it doesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
+#   12) [ ] - packeges - can be use with "BeautifulSoup" and "dateutil" if needed
+#   13) [ ] - TODO: Format of result wair for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
 
 # ---------------------------------------- CONSTANTS ----------------------------------------
 CREATE_ARGV           = "create"
