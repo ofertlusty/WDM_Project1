@@ -1,6 +1,6 @@
 import sys
-import requests 
-import lxml.html 
+import requests
+import lxml.html
 import rdflib
 
 # TODO: Main problems: 
@@ -34,6 +34,7 @@ CREATE_ARGV           = "create"
 QUESTION_ARGV         = "question"
 SOURCE_URL            = "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
 WIKI_PREFIX           = "https://en.wikipedia.org"
+ONTOLOGY_PRIFIX       = "http://example.org/"
 ONTOLOGY_FILE_NAME    = "ontology.nt"
 
 # ---------------------------------------- XPATH Queries ----------------------------------------
@@ -50,7 +51,7 @@ XPATH_QUERY_COUNTRY_TO_AREA               = '//table[contains(@class, "infobox")
 XPATH_QUERY_COUNTRY_TO_GOVERMENT          = '//table[contains(@class, "infobox")]//tr//a[text()="Government"]/ancestor::tr/td//a/@href'
 XPATH_QUERY_COUNTRY_TO_CAPITAL            = '//table[contains(@class, "infobox")]//tr/th[text()="Capital"]/ancestor::tr//td[1]/a//@href'
 XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH       = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr//span[@class="bday"]/text()'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH    = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr/td/text()[last()]' 
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH    = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr/td/text()[last()]'
 
 # ---------------------------------------- Ontology ----------------------------------------
 # TODO: Tom - add prefix? 
@@ -72,24 +73,24 @@ def cleanName(name):
     return name.strip().lower().replace(" ","_")
 
 def addTupleToGraph(graph, entity1, relation, entity2):
-        # TODO: Tom - add prefix? 
-        ontologyEntity1 = rdflib.URIRef(entity1)
-        ontologyRelation = rdflib.URIRef(relation)
-        ontologyEntity2 = rdflib.URIRef(entity2)
+        # TODO: Tom - add prefix?
+        ontologyEntity1 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity1}")
+        ontologyRelation = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{relation}")
+        ontologyEntity2 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity2}")
         graph.add( (ontologyEntity1, ontologyRelation, ontologyEntity2) )
-        
+
         # TODO: debug
-        # print(f"ontologyEntity1(Country\Person): \t{ontologyEntity1}") 
-        # print(f"ontologyRelation: \t{ontologyRelation}") 
-        # print(f"ontologyQueryResult: \t{ontologyEntity2}") 
+        # print(f"ontologyEntity1(Country\Person): \t{ontologyEntity1}")
+        # print(f"ontologyRelation: \t{ontologyRelation}")
+        # print(f"ontologyQueryResult: \t{ontologyEntity2}")
 
 def InsertPersonEntity(graph, doc, personName, query, relation):
     # TODO: debug
     # print("\n#################### InsertPersonEntity ####################\n")
     # print(f"personName: {personName}\t query: {query}\t relation: {relation}")
 
-    queryResults = doc.xpath(query) 
-    for resultUrl in queryResults: 
+    queryResults = doc.xpath(query)
+    for resultUrl in queryResults:
         resultName = cleanName(resultUrl.split("/")[-1])
         addTupleToGraph(graph, personName, relation, resultName)
 
@@ -98,7 +99,7 @@ def InsertCountryEntity(graph, doc, countryName, query, relation):
     # print("\n#################### InsertCountryEntity ####################\n")
     # print(f"countryName: {countryName}\t  query: {query}\t relation: {relation}")
 
-    queryResults = doc.xpath(query) 
+    queryResults = doc.xpath(query)
     for resultUrl in queryResults:
         resultName = cleanName(resultUrl.split("/")[-1])
         addTupleToGraph(graph, resultName, relation, countryName)
@@ -106,14 +107,14 @@ def InsertCountryEntity(graph, doc, countryName, query, relation):
         if relation in ONTOLOGY_RELATION_PERSON_LST:
             if resultUrl in visited:
                 continue
-            
+
             # TODO: debug 
             # print(f"URL: {WIKI_PREFIX}{resultUrl}")
             result = requests.get(f"{WIKI_PREFIX}{resultUrl}")
             doc = lxml.html.fromstring(result.content)
             InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH, ONTOLOGY_RELATION_BORN_ON)
-            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH, ONTOLOGY_RELATION_BORN_IN)    
-            
+            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH, ONTOLOGY_RELATION_BORN_IN)
+
             # Finish working on countryUrl
             visited.add(resultUrl)
 
@@ -121,7 +122,7 @@ def addOntologyEntity(graph, countryUrl):
     # Check if Url has been searched, if not add to set and search it, else return. 
     if countryUrl in visited:
         return
-    
+
     result = requests.get(countryUrl)
     doc = lxml.html.fromstring(result.content)
     countryName = cleanName(countryUrl.split("/")[-1])
@@ -137,10 +138,10 @@ def addOntologyEntity(graph, countryUrl):
     visited.add(countryUrl)
 
 
-def getCountriesUrl(): 
+def getCountriesUrl():
     result = requests.get(SOURCE_URL)
     doc = lxml.html.fromstring(result.content)
-    countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL_WITH_SPAN}") 
+    countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL_WITH_SPAN}")
     # countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL_WITH_SPAN | XPATH_QUERY_COUNTRY_URL_WITHOUT_SPAN}") # TODO: a lot of duplicated (US, UK, France, China when in () after the country)
     # country_url example ["https://en.wikipedia.org/wiki/Jordan", ... ]
 
@@ -155,14 +156,103 @@ def createOntology():
     countryUrlLst = getCountriesUrl()
     for countryUrl in countryUrlLst:
         addOntologyEntity(graph, countryUrl)
-    graph.serialize(ONTOLOGY_FILE_NAME, format="nt")
+    graph.serialize(ONTOLOGY_FILE_NAME, format="nt", encoding="utf-8", errors="ignore")
 
 def answerQuestion(question):
-    # TODO: Tom's implementation 
-    a = ""
+    g = rdflib.Graph()
+    g.parse("ontology.nt", format="nt")
+    question = question[:-1] if question[-1] == '?' else question
+    parsed_question = question.lower().split(" ")      # parse to list and remove '?'
+    if parsed_question[0] == 'what':
+        whatIsQuestion(parsed_question[3:], g)             # get rid of 'what is the'
+    elif parsed_question[0] == 'who' and parsed_question[1] == 'is':
+        whoIsQuestion(parsed_question[2:], g)              # get rid of 'who is'
+    elif parsed_question[0] == 'list' and parsed_question[1] == 'all':
+        listAllQuestion(parsed_question[2:], g)
+    elif ' '.join(parsed_question[:3]) == 'when was the' or ' '.join(parsed_question[:3]) == 'where was the':
+        whenWhereQuestion(parsed_question[3:], g)
+
+
+
+def whenWhereQuestion(parsed_question, g):
+
+
+
+def listAllQuestion(parsed_question, g):
+    # TODO: simple implementation, need to verify base assumptions
+    if ' '.join(parsed_question[:7]) == 'countries whose capital name contains the string':
+        sub_string = ' '.join(parsed_question[7:])
+        question = "select ?country where { ?capital <http://example.org/capital_of> ?country filter contains(str(?capital), '" +sub_string+ "') .}"
+        answers = [str(res.country).split("/")[-1] for res in g.query(question)]
+        answers.sort()
+        print(", ".join(answers).replace("_", " "))
+
+
+def whoIsQuestion(parsed_question, g):
+    if parsed_question[0] == 'the':     # question is about a specific country
+        country = '<' + ONTOLOGY_PRIFIX
+        relationOfQuestion = '<' + ONTOLOGY_PRIFIX
+        if parsed_question[1] == 'president':
+            country += '_'.join(parsed_question[3:]) + '>'
+            relationOfQuestion += 'president_of>'
+        elif parsed_question[1] == 'prime' and parsed_question[2] == 'minister':
+            country += '_'.join(parsed_question[4:]) + '>'
+            relationOfQuestion += 'prime_minister_of>'
+        question = "select ?result where { ?result " + relationOfQuestion + " " + country + " .}"
+        x = g.query(question)
+        answers = [str(res.result).split("/")[-1] for res in x]
+        answers.sort()
+        print(", ".join(answers).replace("_", " "))
+
+    else:                               # question is about a specific person
+        name = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question) + '>'
+        question = "select ?country where { " + name + " <http://example.org/president_of> ?country .}"
+        pres_countries = g.query(question)
+        pres_countries = ["President of " + str(res.country).split("/")[-1] for res in pres_countries]
+        pres_countries.sort()
+        question = "select ?country where { " + name + " <http://example.org/prime_minister_of> ?country .}"
+        prim_countries = g.query(question)
+        prim_countries = ["Prime Minister of " + str(res.country).split("/")[-1] for res in prim_countries]
+        prim_countries.sort()
+        answers = pres_countries + prim_countries
+        print(", ".join(answers).replace("_", " "))
+
+
+def whatIsQuestion(parsed_question, g):
+    relationOfQuestion = '<' + ONTOLOGY_PRIFIX
+    country = '<' + ONTOLOGY_PRIFIX
+    if parsed_question[1] != "of":
+        print("Unknown format of \'what is the\' type of question.")
+        exit()                      # TODO: need to check of we end execution in this case.
+    elif parsed_question[0] == 'capital':
+        relationOfQuestion += 'capital_of>'
+    elif parsed_question[0] == 'area':
+        relationOfQuestion += 'area_of>'         # TODO: add 'squared' at the end of answer
+    elif parsed_question[0] == 'population':
+        relationOfQuestion += 'population_of>'
+    elif parsed_question[0] == 'form' and parsed_question[2] == 'government' and parsed_question[3] == 'in':
+        relationOfQuestion += 'government_in>'
+        parsed_question = parsed_question[2:]       # remove 'form of'
+    else:
+        print("Unknown format of \'what is the\' type of question.")
+        exit()                      # TODO: need to check of we end execution in this case.
+    parsed_question = parsed_question[2:]           # remove the relation's words
+    country += "_".join(parsed_question) + ">"
+    question = "select ?result where { ?result "+relationOfQuestion+" "+country+" .}"
+    outputWhatAnswer(g.query(question))
+    return question
+
+def outputWhatAnswer(x):
+    # TODO: addressing capital letters
+    tmp = list(x)
+    answers = [str(res.result).split("/")[-1] for res in x]
+    answers.sort()
+    print(", ".join(answers).replace("_", " "))
+
+
 
 if __name__ == '__main__':
     if ( sys.argv[1] == f"{CREATE_ARGV}" ):
-        createOntology() 
+        createOntology()
     elif ( sys.argv[1] == f"{QUESTION_ARGV}" ):
         answerQuestion(sys.argv[2])
