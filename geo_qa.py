@@ -39,37 +39,40 @@ QUESTION_ARGV         = "question"
 SOURCE_URL            = "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
 WIKI_PREFIX           = "https://en.wikipedia.org"
 ONTOLOGY_PRIFIX       = "http://example.org/"
+JOE_BIDEN_URL         = "/wiki/Joe_Biden"
+
 ONTOLOGY_FILE_NAME    = "ontology.nt"
 COUNTRY_TYPE          = "country"
 URL_TYPE              = "url"
 
 # ---------------------------------------- XPATH Queries ----------------------------------------
-XPATH_QUERY_COUNTRY_URL                   = '//table[1]//tr/td[1]/span[1]/a/@href'
-XPATH_QUERY_COUNTRY_URL_AFGANISTAN        = '//tr//td//a[@title="Afghanistan"]/@href'
-XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA    = '//tr//td//a[@title="Western Sahara"]/@href'
-XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND    = '//tr//td//a[@title="Channel Islands"]/@href'
+XPATH_QUERY_COUNTRY_URL                      = '//table[1]//tr/td[1]/span[1]/a/@href'
+XPATH_QUERY_COUNTRY_URL_AFGANISTAN           = '//tr//td//a[@title="Afghanistan"]/@href'
+XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA       = '//tr//td//a[@title="Western Sahara"]/@href'
+XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND       = '//tr//td//a[@title="Channel Islands"]/@href'
 
-XPATH_QUERY_COUNTRY_TO_PRESIDENT             = '//table[contains(@class, "infobox")]//tr//a[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
-XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER        = '//table[contains(@class, "infobox")]//tr//a[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
-XPATH_QUERY_COUNTRY_TO_POPULATION            = '//table[contains(@class, "infobox")]//tr//a[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
-XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1    = '//table[contains(@class, "infobox")]//tr//a[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
-XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2    = '//table[contains(@class, "infobox")]//tr//a[text() = "Population"]/following::tr[1]/td//li[1]//text()'
-XPATH_QUERY_COUNTRY_TO_AREA                  = '//table[contains(@class, "infobox")]//tr//a[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
-XPATH_QUERY_COUNTRY_TO_GOVERMENT             = '//table[contains(@class, "infobox")]//tr//a[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
-XPATH_QUERY_COUNTRY_TO_CAPITAL               = '//table[contains(@class, "infobox")]//tr/th[text()="Capital"]/ancestor::tr//td[1]/a[contains(@href, "wiki")]//@href'
-XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH          = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr//span[@class="bday"]/text()'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT  = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr/td/text()[last()]'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A     = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr/td//a[contains(@href, "wiki")][last()]/@href' 
+XPATH_QUERY_COUNTRY_TO_PRESIDENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER        = '//table[contains(@class, "infobox")][1]//tr//*[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_POPULATION            = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//li[1]//text()'
+XPATH_QUERY_COUNTRY_TO_AREA                  = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
+XPATH_QUERY_COUNTRY_TO_GOVERMENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL               = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr//td[1]/a[contains(@href, "wiki")][1]//@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI      = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr/td[1]//li[1]/a/@href'
+XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH          = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr//span[@class="bday"]/text()'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td/text()[last()]'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A     = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td//a[contains(@href, "wiki")][last()]/@href' 
 
 # ---------------------------------------- Ontology ----------------------------------------
-ONTOLOGY_RELATION_PRESIDENT_OF            = "president_of"
-ONTOLOGY_RELATION_PRIME_MINISTER_OF       = "prime_minister_of"
-ONTOLOGY_RELATION_POPULATION_OF           = "population_of"
-ONTOLOGY_RELATION_AREA_OF                 = "area_of"
-ONTOLOGY_RELATION_GOVERMENT_IN            = "government_in"
-ONTOLOGY_RELATION_CAPITAL_OF              = "capital_of"
-ONTOLOGY_RELATION_BORN_ON                 = "born_on"
-ONTOLOGY_RELATION_BORN_IN                 = "born_in"
+ONTOLOGY_RELATION_PRESIDENT_OF               = "president_of"
+ONTOLOGY_RELATION_PRIME_MINISTER_OF          = "prime_minister_of"
+ONTOLOGY_RELATION_POPULATION_OF              = "population_of"
+ONTOLOGY_RELATION_AREA_OF                    = "area_of"
+ONTOLOGY_RELATION_GOVERMENT_IN               = "government_in"
+ONTOLOGY_RELATION_CAPITAL_OF                 = "capital_of"
+ONTOLOGY_RELATION_BORN_ON                    = "born_on"
+ONTOLOGY_RELATION_BORN_IN                    = "born_in"
 
 ONTOLOGY_RELATION_PERSON_LST              = [ONTOLOGY_RELATION_PRESIDENT_OF, ONTOLOGY_RELATION_PRIME_MINISTER_OF]
 ONTOLOGY_RELATION_LOCATION_LST            = [ONTOLOGY_RELATION_CAPITAL_OF, ONTOLOGY_RELATION_BORN_IN]
@@ -86,25 +89,25 @@ def cleanName(name, type):
 
     if type in ONTOLOGY_RELATION_PERSON_LST: 
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        result = result.split("/")[-1].strip().lower().replace(" ","_").replace('"', "")
+        result = result.split("/")[-1].strip().replace(" ","_").replace('"', "")
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_PERSON_LST \t result: {result}\n") # TODO: DEBUG
-    # Set population to "<NUM_OF_PEOPLE>" like "1,234,567" with "," in bitween. If saveral population values found take the first [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
     elif type == ONTOLOGY_RELATION_POPULATION_OF:
-        result = name.strip().lower().split(" ")[0].replace(" ","_").replace(".", ",")
+        result = name.strip().split(" ")[0].replace(" ","_").replace(".", ",")
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_POPULATION_OF \t result: {result}\n") # TODO: DEBUG
     elif type == ONTOLOGY_RELATION_AREA_OF: 
-        result = name.lower().split("km")[0].split("-")[0].strip()
+        result = name.split("km")[0].split("-")[0].strip()
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_AREA_OF \t result: {result}\n") # TODO: DEBUG
     elif type == ONTOLOGY_RELATION_GOVERMENT_IN:
-        result = name.strip().lower().replace(" ","_").replace("-","_").split("/")[-1]
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.strip().replace(" ","_").split("/")[-1]
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_GOVERMENT_IN \t result: {result}\n") # TODO: DEBUG
     elif type == ONTOLOGY_RELATION_CAPITAL_OF:
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        result = result.strip().lower().replace(" ","_").split("/")[-1].split(",")[0]
+        result = result.strip().replace(" ","_").split("/")[-1]
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_CAPITAL_OF \t result: {result}\n") # TODO: DEBUG
     elif type == ONTOLOGY_RELATION_BORN_IN:
@@ -114,18 +117,18 @@ def cleanName(name, type):
             result = result[1]
         else: 
             result = result[0]
-        result = result.split("/")[-1].split(")")[0].lower().strip().replace(" ", "_")
+        result = result.split("/")[-1].split(")")[0].strip().replace(" ", "_")
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_BORN_IN \t result: {result}\n") # TODO: DEBUG
     elif type == ONTOLOGY_RELATION_BORN_ON: 
-        result = name.strip().lower().replace(" ","_")
+        result = name.strip().replace(" ","_")
         result = parser.parse(result, yearfirst = True)
         result = f"{result.year}-{result.month}-{result.day}" # TODO: 1953-6-15 and not 1953-06-15
         # TODO: DEBUG
         # print(f"ONTOLOGY_RELATION_BORN_ON \t result: {result}\n") # TODO: DEBUG
     elif type == COUNTRY_TYPE: 
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        result = result.split("/")[-1].strip().lower().split(" ")[0].replace(" ","_")
+        result = result.split("/")[-1].strip().split(" ")[0].replace(" ","_")
         # TODO: DEBUG
         # print(f"COUNTRY_TYPE \t result: {result}\n") # TODO: DEBUG
     elif type == URL_TYPE:
@@ -143,7 +146,7 @@ def addTupleToGraph(graph, entity1, relation, entity2):
         ontologyRelation = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{relation}")
         ontologyEntity2 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity2}")
         graph.add( (ontologyEntity1, ontologyRelation, ontologyEntity2) )
-
+        
         # TODO: debug
         # print(f"ontologyEntity1(Country\Person): \t{ontologyEntity1}")
         # print(f"ontologyRelation: \t{ontologyRelation}")
@@ -156,18 +159,15 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
 
     queryResults = doc.xpath(query) 
     for resultUrl in queryResults: 
-        # TODO: DEBUG
         resultName = cleanName(resultUrl, relation)
         if ( (relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)): 
-            # TODO: DEBUG
-            # print("\nONTOLOGY_RELATION_BORN_IN - not found in a link, search in text()\n")
             queryResults = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
             resultName = cleanName(resultUrl, relation)
             if ( resultName not in countrySet ): 
                 # If the location isn't found at the countrySet (location is a city or a miss spell country other than those found at SOURCE URL)
                 # than the result isn't valid [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
                 # TODO: DEBUG
-                print(f"InsertPersonEntity() - not valid location from countrySet\t location: '{resultName}'\n")
+                # print(f"InsertPersonEntity() - not valid location from countrySet\t location: '{resultName}'\n")
                 return
         else: 
             addTupleToGraph(graph, personName, relation, resultName)
@@ -181,7 +181,8 @@ def InsertCountryEntity(graph, doc, countryName, query, relation):
     for resultUrl in queryResults:
         resultName = cleanName(resultUrl, relation)
         if relation in ONTOLOGY_RELATION_PERSON_LST:
-            if resultUrl in visited:
+            if ( ( resultUrl in visited ) and ( resultUrl != JOE_BIDEN_URL) ):
+                # TODO: OFer - Guam's president is also Joe Biden - should we skip the visited?? 
                 continue
             
             resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
@@ -196,7 +197,7 @@ def InsertCountryEntity(graph, doc, countryName, query, relation):
         elif ( relation == ONTOLOGY_RELATION_CAPITAL_OF ):
             resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
             resultName = cleanName(resultNameUTF8, relation)
-        elif ( ( relation == ONTOLOGY_RELATION_AREA_OF ) and ( countryName in ("united_states", "american_samoa") ) ): 
+        elif ( ( relation == ONTOLOGY_RELATION_AREA_OF ) and ( countryName in ("United_States", "American_Samoa") ) ): 
             resultName = cleanName(resultUrl.split("(")[1], relation)
           
         addTupleToGraph(graph, resultName, relation, countryName)
@@ -218,11 +219,11 @@ def addOntologyEntity(graph, countryUrl):
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER, ONTOLOGY_RELATION_PRIME_MINISTER_OF)
     
     # Population 
-    if ( countryName in ("belarus", "malta", "dominican_republic")): 
+    if ( countryName in ("Belarus", "Malta", "Dominican_Republic")): 
         # TODO: DEBUG
         # print("\n\n UNIQUE QUERY 1 FOR POPULATION!!\n\n") # TODO: debug 
         InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1, ONTOLOGY_RELATION_POPULATION_OF)
-    elif ( countryName == "russia" ):
+    elif ( countryName  == "Russia" ):
         InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2, ONTOLOGY_RELATION_POPULATION_OF)
     else: 
         InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION, ONTOLOGY_RELATION_POPULATION_OF)
@@ -234,7 +235,10 @@ def addOntologyEntity(graph, countryUrl):
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_GOVERMENT, ONTOLOGY_RELATION_GOVERMENT_IN)
     
     # Capital
-    InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL, ONTOLOGY_RELATION_CAPITAL_OF)
+    if (countryName == "Eswatini"):
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI, ONTOLOGY_RELATION_CAPITAL_OF)
+    else:
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL, ONTOLOGY_RELATION_CAPITAL_OF)
 
     # Finish working on countryUrl
     visited.add(countryUrl)
