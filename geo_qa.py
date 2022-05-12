@@ -265,14 +265,27 @@ def createOntology():
 
 
 def whenWhereQuestion(parsed_question, g):
-    a = 0
+    place = '<' + ONTOLOGY_PRIFIX + 'born_in>'
+    time = '<' + ONTOLOGY_PRIFIX + 'born_on>'
+    pres = '<' + ONTOLOGY_PRIFIX + 'president_of>'
+    prim = '<' + ONTOLOGY_PRIFIX + 'prime_minister_of>'
+    isPresident = parsed_question[3] == 'president'
+    countryBegin = 5 if isPresident else 6
+    relationOfQuestion = place if parsed_question[0] == 'Where' else time
+    titleOfQuestion = pres if isPresident else prim
+    country = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[countryBegin:-1]) + '>'
+    question = "select ?result where { ?person " + titleOfQuestion + country + " . ?person " + relationOfQuestion + " ?result.}"
+    x = g.query(question)
+    answers = [str(res.result).split("/")[-1] for res in x]
+    answers.sort()
+    print(", ".join(answers).replace("_", " "))
 
 
 def listAllQuestion(parsed_question, g):
     # TODO: simple implementation, need to verify base assumptions
     if ' '.join(parsed_question[:7]) == 'countries whose capital name contains the string':
-        sub_string = ' '.join(parsed_question[7:])
-        question = "select ?country where { ?capital <http://example.org/capital_of> ?country filter contains(str(?capital), '" +sub_string+ "') .}"
+        sub_string = ' '.join(parsed_question[7:]).lower()
+        question = "select ?country where { ?capital <http://example.org/capital_of> ?country filter contains(lcase(str(?capital)), '" +sub_string+ "') .}"
         answers = [str(res.country).split("/")[-1] for res in g.query(question)]
         answers.sort()
         print(", ".join(answers).replace("_", " "))
@@ -333,25 +346,47 @@ def whatIsQuestion(parsed_question, g):
     return question
 
 def outputWhatAnswer(x):
-    # TODO: addressing capital letters
+    # TODO: addressing capital letters - might be obsolete
     tmp = list(x)
     answers = [str(res.result).split("/")[-1] for res in x]
     answers.sort()
     print(", ".join(answers).replace("_", " "))
 
+
+def howManyQuestion(parsed_question, g):
+    # TODO: question 25 has double space, need to check if it's on purpose
+    if parsed_question[0] == 'presidents':
+        country = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[4:]) + '>'
+        question = 'select ?president (count(distinct ?president) as ?number) where {' \
+                   ' ?president <http://example.org/president_of> ?country .'\
+                   ' ?president <http://example.org/born_in> ' + country + ' }'
+    else:
+        i = parsed_question.index('are')
+        government_form1 = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[:i]) + '>'
+        government_form2 = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[i+2:]) + '>'
+        question = 'select ?country (count(distinct ?country) as ?number) where {' \
+                   + government_form1 + '<http://example.org/government_in> ?country .' \
+                   + government_form2 + '<http://example.org/government_in> ?country .}'
+    answer = [str(res.number).split("/")[-1] for res in g.query(question)]
+    answer.sort()
+    print(", ".join(answer))
+
+
 def answerQuestion(question):
     g = rdflib.Graph()
     g.parse("ontology.nt", format="nt")
     question = question[:-1] if question[-1] == '?' else question
-    parsed_question = question.lower().split(" ")      # parse to list and remove '?'
-    if parsed_question[0] == 'what':
+    parsed_question = question.split(" ")      # parse to list and remove '?'
+    if parsed_question[0] == 'What':
         whatIsQuestion(parsed_question[3:], g)             # get rid of 'what is the'
-    elif parsed_question[0] == 'who' and parsed_question[1] == 'is':
+    elif ' '.join(parsed_question[:2]) == 'Who is':
         whoIsQuestion(parsed_question[2:], g)              # get rid of 'who is'
-    elif parsed_question[0] == 'list' and parsed_question[1] == 'all':
+    elif ' '.join(parsed_question[:2]) == 'List all':
         listAllQuestion(parsed_question[2:], g)
-    elif ' '.join(parsed_question[:3]) == 'when was the' or ' '.join(parsed_question[:3]) == 'where was the':
-        whenWhereQuestion(parsed_question[3:], g)
+    elif ' '.join(parsed_question[:3]) == 'When was the' or ' '.join(parsed_question[:3]) == 'Where was the':
+        whenWhereQuestion(parsed_question, g)
+    elif ' '.join(parsed_question[:2]) == 'How many':
+        howManyQuestion(parsed_question[2:], g)
 
 
 if __name__ == '__main__':
