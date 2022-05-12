@@ -1,33 +1,37 @@
+from ast import parse
 import sys
 import requests
 import lxml.html
 import rdflib
+from dateutil import parser
+import urllib
 
 # TODO: Main problems: 
 # Retrival: 
-#   1) [ ] - Gibrish URL that cause gibrish names (none standart letters) - TODO: Ofer -  Use encoding utf-8 and parse using urlib.parse.quete? [https://moodle.tau.ac.il/mod/forum/discuss.php?d=92883]
+#   1) [V] - Gibrish URL that cause gibrish names (none standart letters) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=92883]
 #       a) Countries: /wiki/s%c3%a3o_tom%c3%a9_and_pr%c3%adncipe (São Tomé and Príncipe - 187), /wiki/cura%c3%a7ao (Curaçao (Netherlands) - 192)
 #       b) Names: andr%c3%a9s_manuel_l%c3%b3pez_obrador
 #       c) Capitals: "bras%c3%adlia" -> should be Brasília
-#   2) [ ] - Countries list: Missing 3 countries (Western_Sahara 170, Channel_Islands 190, Afghanistan 37)
+#   2) [V] - Countries list: Missing 3 countries (Western_Sahara 170, Channel_Islands 190, Afghanistan 37)
 #   3) Population: 
-#       a) [ ] - Set standart with "," and not "."
-#       b) [ ] - Take the first population found in infobox [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
+#       a) [V] - Set standart with "," and not "."
+#       b) [V] - Take the first population found in infobox [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
+#       c) [ ] - Wrong answers: cook_islands -> '17,459', %', 'males','age','females'
 #   4) Date of birth: 
-#       a) [ ] - Set standart as "1966-04-28" and not "28_april_1966" - use dateutil package?
-#       b) [ ] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
-#   5) [ ] - Area: Set standart as "923,769 km squared" with miles and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=93424]
-#   6) [ ] - Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
-#   7) [ ] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? 
+#       a) [ ] - Set standart as "1966-04-28" and not "28_april_1966" - fix for 1966-01-28 and not 1966-1-28
+#       b) [V] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
+#   5) [V] - Area: Set standart as "923,769 km squared"? and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=93424]
+#   6) [V] - Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
+#   7) [ ] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? The first one
 #   8) Place of birth:
-#       [ ] - a) Create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
-#       [ ] - b) TODO: Do we need to expand US, USA to united states? wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
-#   9)  [ ] - Multiple result - sortlaksi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
-#   10) [ ] - empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
+#       [V] - a) Create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
+#       [V] - b) TODO: Do we need to expand US, USA to united states? No [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
+#   9)  [V] - Multiple result - TODO: Tom - sort lacsi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
+#   10) [V] - Empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
 #       TODO: Tom - for now I ignore it, we you want to set somthing otherwise for debug let me know :)
-#   11) [ ] - If data is not in info box it doesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
-#   12) [ ] - packeges - can be use with "BeautifulSoup" and "dateutil" if needed
-#   13) [ ] - TODO: Format of result wair for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
+#   11) [V] - If data is not in info box it doesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
+#   12) [V] - packeges - can be use with "BeautifulSoup" and "dateutil" if needed
+#   13) [ ] - TODO: Format of result wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
 
 # ---------------------------------------- CONSTANTS ----------------------------------------
 CREATE_ARGV           = "create"
@@ -35,50 +39,114 @@ QUESTION_ARGV         = "question"
 SOURCE_URL            = "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
 WIKI_PREFIX           = "https://en.wikipedia.org"
 ONTOLOGY_PRIFIX       = "http://example.org/"
+JOE_BIDEN_URL         = "/wiki/Joe_Biden"
+
 ONTOLOGY_FILE_NAME    = "ontology.nt"
+COUNTRY_TYPE          = "country"
+URL_TYPE              = "url"
 
 # ---------------------------------------- XPATH Queries ----------------------------------------
-# TODO: Tom - ontology entities will be used all lower case with "_" as spaces, at the final result we need to set it back to "normal"
-# TODO: Tom - if query is empty I ignore it for now 
+XPATH_QUERY_COUNTRY_URL                      = '//table[1]//tr/td[1]/span[1]/a/@href'
+XPATH_QUERY_COUNTRY_URL_AFGANISTAN           = '//tr//td//a[@title="Afghanistan"]/@href'
+XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA       = '//tr//td//a[@title="Western Sahara"]/@href'
+XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND       = '//tr//td//a[@title="Channel Islands"]/@href'
 
-XPATH_QUERY_COUNTRY_URL_WITH_SPAN         = '//table[1]//tr/td[1]/span[1]/a/@href'
-# Another option: XPATH_QUERY_COUNTRY_URL_WITHOUT_SPAN      = '//table[1]//tr/td[1]/a/@href'
-
-XPATH_QUERY_COUNTRY_TO_PRESIDENT          = '//table[contains(@class, "infobox")]//tr//a[text()="President"]/ancestor::tr/td//a[1]/@href'
-XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER     = '//table[contains(@class, "infobox")]//tr//a[text()="Prime Minister"]/ancestor::tr/td//a[1]/@href'
-XPATH_QUERY_COUNTRY_TO_POPULATION         = '//table[contains(@class, "infobox")]//tr//a[contains(text(), "Population")]/following::tr[1]/td/text()[1]'
-XPATH_QUERY_COUNTRY_TO_AREA               = '//table[contains(@class, "infobox")]//tr//a[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
-XPATH_QUERY_COUNTRY_TO_GOVERMENT          = '//table[contains(@class, "infobox")]//tr//a[text()="Government"]/ancestor::tr/td//a/@href'
-XPATH_QUERY_COUNTRY_TO_CAPITAL            = '//table[contains(@class, "infobox")]//tr/th[text()="Capital"]/ancestor::tr//td[1]/a//@href'
-XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH       = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr//span[@class="bday"]/text()'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH    = '//table[contains(@class, "infobox")]//tr//th[text()="Born"]/parent::tr/td/text()[last()]'
+XPATH_QUERY_COUNTRY_TO_PRESIDENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER        = '//table[contains(@class, "infobox")][1]//tr//*[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_POPULATION            = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//li[1]//text()'
+XPATH_QUERY_COUNTRY_TO_AREA                  = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
+XPATH_QUERY_COUNTRY_TO_GOVERMENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL               = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr//td[1]/a[contains(@href, "wiki")][1]//@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI      = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr/td[1]//li[1]/a/@href'
+XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH          = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr//span[@class="bday"]/text()'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td/text()[last()]'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A     = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td//a[contains(@href, "wiki")][last()]/@href' 
 
 # ---------------------------------------- Ontology ----------------------------------------
-# TODO: Tom - add prefix? 
-ONTOLOGY_RELATION_PRESIDENT_OF            = "president_of"
-ONTOLOGY_RELATION_PRIME_MINISTER_OF       = "prime_minister_of"
-ONTOLOGY_RELATION_POPULATION_OF           = "population_of"
-ONTOLOGY_RELATION_AREA_OF                 = "area_of"
-ONTOLOGY_RELATION_GOVERMENT_IN            = "government_in"
-ONTOLOGY_RELATION_CAPITAL_OF              = "capital_of"
-ONTOLOGY_RELATION_BORN_ON                 = "born_on"
-ONTOLOGY_RELATION_BORN_IN                 = "born_in"
+ONTOLOGY_RELATION_PRESIDENT_OF               = "president_of"
+ONTOLOGY_RELATION_PRIME_MINISTER_OF          = "prime_minister_of"
+ONTOLOGY_RELATION_POPULATION_OF              = "population_of"
+ONTOLOGY_RELATION_AREA_OF                    = "area_of"
+ONTOLOGY_RELATION_GOVERMENT_IN               = "government_in"
+ONTOLOGY_RELATION_CAPITAL_OF                 = "capital_of"
+ONTOLOGY_RELATION_BORN_ON                    = "born_on"
+ONTOLOGY_RELATION_BORN_IN                    = "born_in"
 
 ONTOLOGY_RELATION_PERSON_LST              = [ONTOLOGY_RELATION_PRESIDENT_OF, ONTOLOGY_RELATION_PRIME_MINISTER_OF]
+ONTOLOGY_RELATION_LOCATION_LST            = [ONTOLOGY_RELATION_CAPITAL_OF, ONTOLOGY_RELATION_BORN_IN]
 
 # ---------------------------------------- Global ----------------------------------------
-visited = set()
+visited = set()         # Set of URLs we allready visited in
+countrySet = set()      # Set of all countries found in SOURCE URL (https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations))
 
-def cleanName(name):
-    return name.strip().lower().replace(" ","_")
+# The function clean the name into the standart of the type. 
+# type can be URL, country or specific relation. 
+def cleanName(name, type):
+    # TODO: DEBUG
+    # print(f"cleanName() \t name: {name} \t type: {type}") # TODO: DEBUG
+
+    if type in ONTOLOGY_RELATION_PERSON_LST: 
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.split("/")[-1].strip().replace(" ","_").replace('"', "")
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_PERSON_LST \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_POPULATION_OF:
+        result = name.strip().split(" ")[0].replace(" ","_").replace(".", ",")
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_POPULATION_OF \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_AREA_OF: 
+        result = name.split("km")[0].split("-")[0].strip()
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_AREA_OF \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_GOVERMENT_IN:
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.strip().replace(" ","_").split("/")[-1]
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_GOVERMENT_IN \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_CAPITAL_OF:
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.strip().replace(" ","_").split("/")[-1]
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_CAPITAL_OF \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_BORN_IN:
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.split(",")
+        if result[0] == "":
+            result = result[1]
+        else: 
+            result = result[0]
+        result = result.split("/")[-1].split(")")[0].strip().replace(" ", "_")
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_BORN_IN \t result: {result}\n") # TODO: DEBUG
+    elif type == ONTOLOGY_RELATION_BORN_ON: 
+        result = name.strip().replace(" ","_")
+        result = parser.parse(result, yearfirst = True)
+        result = f"{result.year}-{result.month}-{result.day}" # TODO: 1953-6-15 and not 1953-06-15
+        # TODO: DEBUG
+        # print(f"ONTOLOGY_RELATION_BORN_ON \t result: {result}\n") # TODO: DEBUG
+    elif type == COUNTRY_TYPE: 
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        result = result.split("/")[-1].strip().split(" ")[0].replace(" ","_")
+        # TODO: DEBUG
+        # print(f"COUNTRY_TYPE \t result: {result}\n") # TODO: DEBUG
+    elif type == URL_TYPE:
+        result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
+        # TODO: DEBUG
+        # print(f"URL_TYPE \t result: {result}\n") # TODO: DEBUG
+    else: 
+        print("ERROR: unsupported type for cleanName() function!")
+        return -1
+        
+    return result
 
 def addTupleToGraph(graph, entity1, relation, entity2):
-        # TODO: Tom - add prefix?
         ontologyEntity1 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity1}")
         ontologyRelation = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{relation}")
         ontologyEntity2 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity2}")
         graph.add( (ontologyEntity1, ontologyRelation, ontologyEntity2) )
-
+        
         # TODO: debug
         # print(f"ontologyEntity1(Country\Person): \t{ontologyEntity1}")
         # print(f"ontologyRelation: \t{ontologyRelation}")
@@ -89,34 +157,50 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
     # print("\n#################### InsertPersonEntity ####################\n")
     # print(f"personName: {personName}\t query: {query}\t relation: {relation}")
 
-    queryResults = doc.xpath(query)
-    for resultUrl in queryResults:
-        resultName = cleanName(resultUrl.split("/")[-1])
-        addTupleToGraph(graph, personName, relation, resultName)
+    queryResults = doc.xpath(query) 
+    for resultUrl in queryResults: 
+        resultName = cleanName(resultUrl, relation)
+        if ( (relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)): 
+            queryResults = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
+            resultName = cleanName(resultUrl, relation)
+            if ( resultName not in countrySet ): 
+                # If the location isn't found at the countrySet (location is a city or a miss spell country other than those found at SOURCE URL)
+                # than the result isn't valid [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
+                # TODO: DEBUG
+                # print(f"InsertPersonEntity() - not valid location from countrySet\t location: '{resultName}'\n")
+                return
+        else: 
+            addTupleToGraph(graph, personName, relation, resultName)
 
 def InsertCountryEntity(graph, doc, countryName, query, relation):
     # TODO: debug 
-    # print("\n#################### InsertCountryEntity ####################\n")
-    # print(f"countryName: {countryName}\t  query: {query}\t relation: {relation}")
+    # print("\n#################### InsertCountryEntity ####################")
+    # print(f"countryName: {countryName}\t  query: {query}\t relation: {relation}\n")
 
     queryResults = doc.xpath(query)
     for resultUrl in queryResults:
-        resultName = cleanName(resultUrl.split("/")[-1])
-        addTupleToGraph(graph, resultName, relation, countryName)
-
+        resultName = cleanName(resultUrl, relation)
         if relation in ONTOLOGY_RELATION_PERSON_LST:
-            if resultUrl in visited:
+            if ( ( resultUrl in visited ) and ( resultUrl != JOE_BIDEN_URL) ):
+                # TODO: OFer - Guam's president is also Joe Biden - should we skip the visited?? 
                 continue
-
-            # TODO: debug 
-            # print(f"URL: {WIKI_PREFIX}{resultUrl}")
+            
+            resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
+            resultName = cleanName(resultNameUTF8, relation)
             result = requests.get(f"{WIKI_PREFIX}{resultUrl}")
             doc = lxml.html.fromstring(result.content)
             InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH, ONTOLOGY_RELATION_BORN_ON)
-            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH, ONTOLOGY_RELATION_BORN_IN)
-
+            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A, ONTOLOGY_RELATION_BORN_IN)    
+            
             # Finish working on countryUrl
             visited.add(resultUrl)
+        elif ( relation == ONTOLOGY_RELATION_CAPITAL_OF ):
+            resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
+            resultName = cleanName(resultNameUTF8, relation)
+        elif ( ( relation == ONTOLOGY_RELATION_AREA_OF ) and ( countryName in ("United_States", "American_Samoa") ) ): 
+            resultName = cleanName(resultUrl.split("(")[1], relation)
+          
+        addTupleToGraph(graph, resultName, relation, countryName)
 
 def addOntologyEntity(graph, countryUrl):
     # Check if Url has been searched, if not add to set and search it, else return. 
@@ -125,14 +209,36 @@ def addOntologyEntity(graph, countryUrl):
 
     result = requests.get(countryUrl)
     doc = lxml.html.fromstring(result.content)
-    countryName = cleanName(countryUrl.split("/")[-1])
+    countryName = cleanName(countryUrl, COUNTRY_TYPE)
+    countrySet.add(countryName)
 
+    # President
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_PRESIDENT, ONTOLOGY_RELATION_PRESIDENT_OF)
+    
+    # Prime minister
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER, ONTOLOGY_RELATION_PRIME_MINISTER_OF)
-    InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION, ONTOLOGY_RELATION_POPULATION_OF)
+    
+    # Population 
+    if ( countryName in ("Belarus", "Malta", "Dominican_Republic")): 
+        # TODO: DEBUG
+        # print("\n\n UNIQUE QUERY 1 FOR POPULATION!!\n\n") # TODO: debug 
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1, ONTOLOGY_RELATION_POPULATION_OF)
+    elif ( countryName  == "Russia" ):
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2, ONTOLOGY_RELATION_POPULATION_OF)
+    else: 
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_POPULATION, ONTOLOGY_RELATION_POPULATION_OF)
+    
+    # Area
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_AREA, ONTOLOGY_RELATION_AREA_OF)
+    
+    # Goverment
     InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_GOVERMENT, ONTOLOGY_RELATION_GOVERMENT_IN)
-    InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL, ONTOLOGY_RELATION_CAPITAL_OF)
+    
+    # Capital
+    if (countryName == "Eswatini"):
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI, ONTOLOGY_RELATION_CAPITAL_OF)
+    else:
+        InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL, ONTOLOGY_RELATION_CAPITAL_OF)
 
     # Finish working on countryUrl
     visited.add(countryUrl)
@@ -141,13 +247,12 @@ def addOntologyEntity(graph, countryUrl):
 def getCountriesUrl():
     result = requests.get(SOURCE_URL)
     doc = lxml.html.fromstring(result.content)
-    countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL_WITH_SPAN}")
-    # countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL_WITH_SPAN | XPATH_QUERY_COUNTRY_URL_WITHOUT_SPAN}") # TODO: a lot of duplicated (US, UK, France, China when in () after the country)
+    countryRelUrl = doc.xpath(f"{XPATH_QUERY_COUNTRY_URL} | {XPATH_QUERY_COUNTRY_URL_AFGANISTAN} | {XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA} | {XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND}") 
     # country_url example ["https://en.wikipedia.org/wiki/Jordan", ... ]
 
     countryUrlLst = list()
     for countryUrl in countryRelUrl:
-        countryUrlClean = cleanName(f"{WIKI_PREFIX}{countryUrl}")
+        countryUrlClean = cleanName(f"{WIKI_PREFIX}{countryUrl}", URL_TYPE)
         countryUrlLst.append(countryUrlClean)
     return countryUrlLst
 
@@ -158,24 +263,9 @@ def createOntology():
         addOntologyEntity(graph, countryUrl)
     graph.serialize(ONTOLOGY_FILE_NAME, format="nt", encoding="utf-8", errors="ignore")
 
-def answerQuestion(question):
-    g = rdflib.Graph()
-    g.parse("ontology.nt", format="nt")
-    question = question[:-1] if question[-1] == '?' else question
-    parsed_question = question.lower().split(" ")      # parse to list and remove '?'
-    if parsed_question[0] == 'what':
-        whatIsQuestion(parsed_question[3:], g)             # get rid of 'what is the'
-    elif parsed_question[0] == 'who' and parsed_question[1] == 'is':
-        whoIsQuestion(parsed_question[2:], g)              # get rid of 'who is'
-    elif parsed_question[0] == 'list' and parsed_question[1] == 'all':
-        listAllQuestion(parsed_question[2:], g)
-    elif ' '.join(parsed_question[:3]) == 'when was the' or ' '.join(parsed_question[:3]) == 'where was the':
-        whenWhereQuestion(parsed_question[3:], g)
-
-
 
 def whenWhereQuestion(parsed_question, g):
-
+    a = 0
 
 
 def listAllQuestion(parsed_question, g):
@@ -249,6 +339,19 @@ def outputWhatAnswer(x):
     answers.sort()
     print(", ".join(answers).replace("_", " "))
 
+def answerQuestion(question):
+    g = rdflib.Graph()
+    g.parse("ontology.nt", format="nt")
+    question = question[:-1] if question[-1] == '?' else question
+    parsed_question = question.lower().split(" ")      # parse to list and remove '?'
+    if parsed_question[0] == 'what':
+        whatIsQuestion(parsed_question[3:], g)             # get rid of 'what is the'
+    elif parsed_question[0] == 'who' and parsed_question[1] == 'is':
+        whoIsQuestion(parsed_question[2:], g)              # get rid of 'who is'
+    elif parsed_question[0] == 'list' and parsed_question[1] == 'all':
+        listAllQuestion(parsed_question[2:], g)
+    elif ' '.join(parsed_question[:3]) == 'when was the' or ' '.join(parsed_question[:3]) == 'where was the':
+        whenWhereQuestion(parsed_question[3:], g)
 
 
 if __name__ == '__main__':
