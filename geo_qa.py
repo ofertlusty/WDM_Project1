@@ -16,7 +16,7 @@ import urllib
 #   3) Population: 
 #       a) [V] - Set standart with "," and not "."
 #       b) [V] - Take the first population found in infobox [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
-#       c) [ ] - Wrong answers: cook_islands -> '17,459', %', 'males','age','females'
+#       c) [V] - Wrong answers: cook_islands -> '17,459', %', 'males','age','females'
 #   4) Date of birth: 
 #       a) [V] - Set standart as "1966-04-28" and not "28_april_1966" - fix for 1966-01-28 and not 1966-1-28
 #       b) [V] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
@@ -32,7 +32,7 @@ import urllib
 #   11) [V] - If data is not in info box it doesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
 #   12) [V] - packeges - can be use with "BeautifulSoup" and "datepip listutil" if needed
 #   13) [V] - Format of result wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
-#   14) [ ] - TODO: waiting for response: name with qoutes - should we remove the qoutes? "http://example.org/Philip_"Brave"_Davis" [https://moodle.tau.ac.il/mod/forum/discuss.php?d=101393]
+#   14) [V] - Name with qoutes - should we remove the qoutes? "http://example.org/Philip_"Brave"_Davis" [https://moodle.tau.ac.il/mod/forum/discuss.php?d=101393]
 
 # ---------------------------------------- CONSTANTS ----------------------------------------
 CREATE_ARGV           = "create"
@@ -77,10 +77,8 @@ ONTOLOGY_RELATION_BORN_ON                    = "born_on"
 ONTOLOGY_RELATION_BORN_IN                    = "born_in"
 
 ONTOLOGY_RELATION_PERSON_LST              = [ONTOLOGY_RELATION_PRESIDENT_OF, ONTOLOGY_RELATION_PRIME_MINISTER_OF]
-ONTOLOGY_RELATION_LOCATION_LST            = [ONTOLOGY_RELATION_CAPITAL_OF, ONTOLOGY_RELATION_BORN_IN]
 
 # ---------------------------------------- Global ----------------------------------------
-visited = set()         # Set of URLs we allready visited in
 countrySet = set()      # Set of all countries found in SOURCE URL (https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations))
 
 # The function cleanName setteting the name according to the type's standart as describes below.
@@ -91,10 +89,9 @@ def cleanName(name, type):
     # 1) Parse as utf-8 for special letters
     # 2) Remove wiki prefix
     # 3) Strip and replace spaces as "_"
-    # 4) Removing '"' with none is necessery for some of the names to be serialized (such as: 'Philip_"Brave"_Davis')
     if type in ONTOLOGY_RELATION_PERSON_LST: 
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        result = result.split("/")[-1].strip().replace(" ","_").replace('"', "")
+        result = result.split("/")[-1].strip().replace(" ","_")
             
     # Type: ONTOLOGY_RELATION_POPULATION_OF
     # 1) Split string using space delimiter for population contains additioanl data such as validity date (such as: '53,582,855 (2017)'
@@ -106,11 +103,10 @@ def cleanName(name, type):
     # Type: ONTOLOGY_RELATION_AREA_OF
     # 1) Split string using "km" delimiter for setting the standart result as a pure number, we add "km squred" at the final answer (such as: '53,582,855 (2017)'
     # 2) Strip
-    # 3) Split string usnig delimiter "-" for areas with range (such as: '20,770–22,072')
-    # 4) Concatination of AREA_OF_KM_SQURED
-    # 5) Spesicial cases: "United_States", "American_Samoa" - result writen in miles first, needed to split with "( and take the second part". (such as: '3,796,742 sq mi (9,833,520')
+    # 3) Concatination of AREA_OF_KM_SQURED
+    # 4) Spesicial cases: "United_States", "American_Samoa" - result writen in miles first, needed to split with "( and take the second part". (such as: '3,796,742 sq mi (9,833,520')
     elif type == ONTOLOGY_RELATION_AREA_OF: 
-        result = name.split("km")[0].split("-")[0].strip()
+        result = name.split("km")[0].strip()
         result = f"{result}{AREA_OF_KM_SQURED}"
 
     # Type: ONTOLOGY_RELATION_GOVERMENT_IN
@@ -175,7 +171,7 @@ def cleanName(name, type):
         result = result.split("/")[-1].strip().replace(" ","_")
 
     # Type: URL_TYPE
-    # 1) Parse as utf-8 for special letters
+    # Parse as utf-8 for special letters
     elif type == URL_TYPE:
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
 
@@ -194,10 +190,8 @@ def addTupleToGraph(graph, entity1, relation, entity2):
         graph.add( (ontologyEntity1, ontologyRelation, ontologyEntity2) )
 
 # The function InsertPersonEntity run the xpath query and adding the result to the graph. 
-# While relation is ONTOLOGY_RELATION_BORN_IN the function checks if the country the person was born in is found in the country list, 
+# While relation is ONTOLOGY_RELATION_BORN_IN the function checks if the country of the person was born in is found in the country list, 
 # if not we throw the result and move to the next one. 
-
-# TODO: add description
 def InsertPersonEntity(graph, doc, personName, query, relation):
     queryResults = doc.xpath(query) 
     for resultUrl in queryResults: 
@@ -205,47 +199,38 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
         if ( (relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)): 
             queryResults = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
             resultName = cleanName(resultUrl, relation)
-            if ( resultName not in countrySet ): 
-                # If the location isn't found at the countrySet (location is a city or a miss spell country other than those found at SOURCE URL)
-                # than the result isn't valid [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
-                return
+            if ( resultName in countrySet ): 
+                addTupleToGraph(graph, personName, relation, resultName)
+            else: 
+                return                
         else: 
             addTupleToGraph(graph, personName, relation, resultName)
 
-# TODO: add description
+# The function InsertCountryEntity run the xpath query and adding the result to the graph. 
+# While relation is ONTOLOGY_RELATION_PERSON_LST the function get the URL content and run queries of Date\place of birth.
+# While relation is ONTOLOGY_RELATION_CAPITAL_OF we add wiki prefix and encode with utf-8 for special charecters. 
+# While relation is ONTOLOGY_RELATION_AREA_OF and countries are "United_States" or "American_Samoa" we want to take the size of the country in km squared found in parenthesis.
 def InsertCountryEntity(graph, doc, countryName, query, relation):
     queryResults = doc.xpath(query)
     for resultUrl in queryResults:
         resultName = cleanName(resultUrl, relation)
         if relation in ONTOLOGY_RELATION_PERSON_LST:
-            # if ( ( resultUrl in visited ) and ( resultUrl != JOE_BIDEN_URL) ):
-            #     # TODO: OFer - Guam's president is also Joe Biden - should we skip the visited?? 
-            #     continue
-            
             resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
             resultName = cleanName(resultNameUTF8, relation)
             result = requests.get(f"{WIKI_PREFIX}{resultUrl}")
             doc = lxml.html.fromstring(result.content)
             InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH, ONTOLOGY_RELATION_BORN_ON)
-            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A, ONTOLOGY_RELATION_BORN_IN)    
-            
-            # TODO: think about removing visited for person or both (persons and countries)
-            # Finish working on countryUrl
-            # visited.add(resultUrl)
+            InsertPersonEntity(graph, doc, resultName, XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A, ONTOLOGY_RELATION_BORN_IN)                
         elif ( relation == ONTOLOGY_RELATION_CAPITAL_OF ):
-            resultNameUTF8 = cleanName(f"{WIKI_PREFIX}{resultUrl}", URL_TYPE)
-            resultName = cleanName(resultNameUTF8, relation)
+            resultName = cleanName(f"{WIKI_PREFIX}{resultUrl}", relation)
         elif ( ( relation == ONTOLOGY_RELATION_AREA_OF ) and ( countryName in ("United_States", "American_Samoa") ) ): 
             resultName = cleanName(resultUrl.split("(")[1], relation)
           
         addTupleToGraph(graph, resultName, relation, countryName)
 
-# TODO: add description
+# The function addOntologyEntity get the URL content, add the country to CountrySet and calls the fuctions resposible for creating the ontology. 
+# Notice there special cases for some counties and relations that requeried us to create several queries for diffrenent relations.
 def addOntologyEntity(graph, countryUrl):
-    # Check if Url has been searched, if not add to set and search it, else return. 
-    if countryUrl in visited:
-        return
-
     result = requests.get(countryUrl)
     doc = lxml.html.fromstring(result.content)
     countryName = cleanName(countryUrl, COUNTRY_TYPE)
@@ -277,10 +262,7 @@ def addOntologyEntity(graph, countryUrl):
     else:
         InsertCountryEntity(graph, doc, countryName, XPATH_QUERY_COUNTRY_TO_CAPITAL, ONTOLOGY_RELATION_CAPITAL_OF)
 
-    # Finish working on countryUrl
-    visited.add(countryUrl)
-
-# TODO: add description
+# The function getCountriesUrl get all counties URL from SOURCE_URL. Notice that 3 of the countries wasn't found with the general query and therefore we added a special queries for them. 
 def getCountriesUrl():
     result = requests.get(SOURCE_URL)
     doc = lxml.html.fromstring(result.content)
@@ -293,7 +275,7 @@ def getCountriesUrl():
         countryUrlLst.append(countryUrlClean)
     return countryUrlLst
 
-# TODO: add description
+# The function createOntology create the ontology for the graph and save it to the file ONTOLOGY_FILE_NAME
 def createOntology():
     graph = rdflib.Graph()
     countryUrlLst = getCountriesUrl()
