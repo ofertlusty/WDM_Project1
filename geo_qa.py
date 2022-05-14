@@ -27,7 +27,7 @@ XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND            = '//tr//td//a[@title="Channel
 XPATH_QUERY_COUNTRY_TO_PRESIDENT                  = '//table[contains(@class, "infobox")][1]//tr//*[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
 XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER             = '//table[contains(@class, "infobox")][1]//tr//*[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
 XPATH_QUERY_COUNTRY_TO_POPULATION                 = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
-XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1         = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1         = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()'
 XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2         = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//li[1]//text()'
 XPATH_QUERY_COUNTRY_TO_AREA                       = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
 XPATH_QUERY_COUNTRY_TO_GOVERMENT                  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
