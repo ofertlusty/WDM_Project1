@@ -89,19 +89,19 @@ if __name__ == '__main__':
     os.system('python geo_qa.py question "What is the capital of Greenland?"')
 
     print("\nquestion 21:List all countries whose capital name contains the string hi")
-    print("Bhutan, India, Moldova,  Sint Maarten,  United States")
+    print("Bhutan, India, Moldova, Sint Maarten, United States")
     os.system('python geo_qa.py question "List all countries whose capital name contains the string hi"')
 
     print("\nquestion 22:List all countries whose capital name contains the string free")
-    print(" Sierra leone")
+    print("Sierra leone")
     os.system('python geo_qa.py question "List all countries whose capital name contains the string free"')
     
     print("\nquestion 23:List all countries whose capital name contains the string alo")
-    print(" Niue, Tonga")
+    print("Niue, Tonga")
     os.system('python geo_qa.py question "List all countries whose capital name contains the string alo"')
     
     print("\nquestion 24:List all countries whose capital name contains the string baba")
-    print(" Eswatini, Ethiopia")
+    print("Eswatini, Ethiopia")
     os.system('python geo_qa.py question "List all countries whose capital name contains the string baba"')
     
     print("\nquestion 25:How many  Absolute monarchy are also Unitary state?")
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     
     print("\nquestion 27:How many Dictatorship are also Authoritarian?")
     # print("equatorial guinea, djibouti, rwanda")
-    print("3")
+    print("2")
     os.system('python geo_qa.py question "How many Dictatorship are also Authoritarian?"')
     
     print("\nquestion 28:How many presidents were born in Iceland? ")

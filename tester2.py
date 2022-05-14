@@ -20,4 +20,3 @@ for question in questions:
     cmd = "python ./geo_qa.py question"
     cmd += ' "' + question + '"'
     p = os.system(cmd)
-    print(f"Status: {p}\n")
