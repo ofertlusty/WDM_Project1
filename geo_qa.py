@@ -295,20 +295,22 @@ def whenWhereQuestion(parsed_question, g):
     titleOfQuestion = pres if isPresident else prim
     country = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[countryBegin:-1]) + '>'
     question = "select ?result where { ?person " + titleOfQuestion + country + " . ?person " + relationOfQuestion + " ?result.}"
-    x = g.query(question)
-    answers = [str(res.result).split("/")[-1] for res in x]
-    answers.sort()
-    print(", ".join(answers).replace("_", " "))
+    return sparqlResultToAnswer(g.query(question))
 
 
 def listAllQuestion(parsed_question, g):
-    # TODO: simple implementation, need to verify base assumptions
-    if ' '.join(parsed_question[:7]) == 'countries whose capital name contains the string':
+    if parsed_question[0] == 'countries':           # The pattern from the assignment
         sub_string = ' '.join(parsed_question[7:]).lower()
-        question = "select ?country where { ?capital <http://example.org/capital_of> ?country filter contains(lcase(str(?capital)), '" +sub_string+ "') .}"
-        answers = [str(res.country).split("/")[-1] for res in g.query(question)]
-        answers.sort()
-        print(", ".join(answers).replace("_", " "))
+        question = "select ?result where { ?capital <http://example.org/capital_of> ?result filter contains(lcase(str(?capital)), '" +sub_string+ "') .}"
+        return sparqlResultToAnswer(g.query(question))
+    elif parsed_question[0] == 'heads':             # The pattern we chose to add
+        country = '<' + ONTOLOGY_PRIFIX + "_".join(parsed_question[5:]) + '>'
+        question = 'select ?prime { ?prime <http://example.org/prime_minister_of> ?c. ?prime <http://example.org/born_in> ' + country + '.}'
+        prime_ministers = [str(res.prime).split("/")[-1] for res in g.query(question)]
+        question = 'select ?president { ?president <http://example.org/president_of> ?c. ?president <http://example.org/born_in> ' + country + '.}'
+        presidents = [str(res.president).split("/")[-1] for res in g.query(question)]
+        answers = sorted(prime_ministers + presidents)
+        return (", ".join(answers).replace("_", " "))
 
 
 def whoIsQuestion(parsed_question, g):
@@ -322,91 +324,74 @@ def whoIsQuestion(parsed_question, g):
             country += '_'.join(parsed_question[4:]) + '>'
             relationOfQuestion += 'prime_minister_of>'
         question = "select ?result where { ?result " + relationOfQuestion + " " + country + " .}"
-        x = g.query(question)
-        answers = [str(res.result).split("/")[-1] for res in x]
-        answers.sort()
-        print(", ".join(answers).replace("_", " "))
+        return sparqlResultToAnswer(g.query(question))
 
     else:                               # question is about a specific person
         name = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question) + '>'
         question = "select ?country where { " + name + " <http://example.org/president_of> ?country .}"
-        pres_countries = g.query(question)
-        pres_countries = ["President of " + str(res.country).split("/")[-1] for res in pres_countries]
-        pres_countries.sort()
+        pres_countries = ["President of " + str(res.country).split("/")[-1] for res in g.query(question)]
         question = "select ?country where { " + name + " <http://example.org/prime_minister_of> ?country .}"
-        prim_countries = g.query(question)
-        prim_countries = ["Prime Minister of " + str(res.country).split("/")[-1] for res in prim_countries]
-        prim_countries.sort()
-        answers = pres_countries + prim_countries
-        print(", ".join(answers).replace("_", " "))
+        prim_countries = ["Prime Minister of " + str(res.country).split("/")[-1] for res in g.query(question)]
+        answers = sorted(pres_countries + prim_countries)
+        return (", ".join(answers).replace("_", " "))
 
 
 def whatIsQuestion(parsed_question, g):
     relationOfQuestion = '<' + ONTOLOGY_PRIFIX
     country = '<' + ONTOLOGY_PRIFIX
-    if parsed_question[1] != "of":
-        print("Unknown format of \'what is the\' type of question.")
-        exit()                      # TODO: need to check of we end execution in this case.
-    elif parsed_question[0] == 'capital':
+    if parsed_question[0] == 'capital':
         relationOfQuestion += 'capital_of>'
     elif parsed_question[0] == 'area':
-        relationOfQuestion += 'area_of>'         # TODO: add 'squared' at the end of answer
+        relationOfQuestion += 'area_of>'
     elif parsed_question[0] == 'population':
         relationOfQuestion += 'population_of>'
-    elif parsed_question[0] == 'form' and parsed_question[2] == 'government' and parsed_question[3] == 'in':
+    elif ' '.join(parsed_question[:3]) == 'form of government':
         relationOfQuestion += 'government_in>'
         parsed_question = parsed_question[2:]       # remove 'form of'
-    else:
-        print("Unknown format of \'what is the\' type of question.")
-        exit()                      # TODO: need to check of we end execution in this case.
-    parsed_question = parsed_question[2:]           # remove the relation's words
+    parsed_question = parsed_question[2:]           # keep only the relation's words
     country += "_".join(parsed_question) + ">"
     question = "select ?result where { ?result "+relationOfQuestion+" "+country+" .}"
-    outputWhatAnswer(g.query(question))
-    return question
+    return sparqlResultToAnswer(g.query(question))
 
-def outputWhatAnswer(x):
-    # TODO: addressing capital letters - might be obsolete
-    tmp = list(x)
+def sparqlResultToAnswer(x):
     answers = [str(res.result).split("/")[-1] for res in x]
     answers.sort()
-    print(", ".join(answers).replace("_", " "))
+    return (", ".join(answers).replace("_", " "))
 
 
 def howManyQuestion(parsed_question, g):
-    # TODO: question 25 has double space, need to check if it's on purpose
     if parsed_question[0] == 'presidents':
         country = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[4:]) + '>'
-        question = 'select ?president (count(distinct ?president) as ?number) where {' \
-                   ' ?president <http://example.org/president_of> ?country .'\
+        question = 'select ?president (count(distinct ?president) as ?result) where {' \
+                   ' ?president <http://example.org/president_of> ' + country + ' .'\
                    ' ?president <http://example.org/born_in> ' + country + ' }'
     else:
         i = parsed_question.index('are')
         government_form1 = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[:i]) + '>'
         government_form2 = '<' + ONTOLOGY_PRIFIX + '_'.join(parsed_question[i+2:]) + '>'
-        question = 'select ?country (count(distinct ?country) as ?number) where {' \
+        question = 'select ?country (count(distinct ?country) as ?result) where {' \
                    + government_form1 + '<http://example.org/government_in> ?country .' \
                    + government_form2 + '<http://example.org/government_in> ?country .}'
-    answer = [str(res.number).split("/")[-1] for res in g.query(question)]
-    answer.sort()
-    print(", ".join(answer))
+    return sparqlResultToAnswer(g.query(question))
 
 
 def answerQuestion(question):
     g = rdflib.Graph()
     g.parse("ontology.nt", format="nt")
-    question = question[:-1] if question[-1] == '?' else question
-    parsed_question = question.split(" ")      # parse to list and remove '?'
+    question = question.strip()
+    question = question[:-1] if question[-1] == '?' else question   # remove '?' if used
+    parsed_question = question.split()                              # parse to list
     if parsed_question[0] == 'What':
-        whatIsQuestion(parsed_question[3:], g)             # get rid of 'what is the'
+        answer = whatIsQuestion(parsed_question[3:], g)                      # get rid of 'What is the'
     elif ' '.join(parsed_question[:2]) == 'Who is':
-        whoIsQuestion(parsed_question[2:], g)              # get rid of 'who is'
+        answer = whoIsQuestion(parsed_question[2:], g)                       # get rid of 'Who is'
     elif ' '.join(parsed_question[:2]) == 'List all':
-        listAllQuestion(parsed_question[2:], g)
+        answer = listAllQuestion(parsed_question[2:], g)                     # get rid of 'List all'
     elif ' '.join(parsed_question[:3]) == 'When was the' or ' '.join(parsed_question[:3]) == 'Where was the':
-        whenWhereQuestion(parsed_question, g)
+        answer = whenWhereQuestion(parsed_question, g)                       # still needs first word of question
     elif ' '.join(parsed_question[:2]) == 'How many':
-        howManyQuestion(parsed_question[2:], g)
+        answer = howManyQuestion(parsed_question[2:], g)                     # get rid of 'How many'
+    print(answer)
 
 
 if __name__ == '__main__':
