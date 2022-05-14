@@ -176,7 +176,11 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
                 queryResults2 = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
             
             for resultUrl2 in queryResults2:
-                resultName2 = cleanName(resultUrl2, relation) 
+                if (personName == "Volodymyr_Zelenskyy"):
+                    resultName2 = cleanName(resultUrl2, relation)
+                    resultName2 = resultName2.split("_")[-1].strip()
+                else:
+                    resultName2 = cleanName(resultUrl2, relation)
 
 
                 if ( resultName2 in countrySet ):                     
