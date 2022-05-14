@@ -1,38 +1,9 @@
-from ast import parse
 import sys
 import requests
 import lxml.html
 import rdflib
 from dateutil import parser
 import urllib
-
-# TODO: Main problems: 
-# Retrival: 
-#   1) [V] - Gibrish URL that cause gibrish names (none standart letters) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=92883]
-#       a) Countries: /wiki/s%c3%a3o_tom%c3%a9_and_pr%c3%adncipe (São Tomé and Príncipe - 187), /wiki/cura%c3%a7ao (Curaçao (Netherlands) - 192)
-#       b) Names: andr%c3%a9s_manuel_l%c3%b3pez_obrador
-#       c) Capitals: "bras%c3%adlia" -> should be Brasília
-#   2) [V] - Countries list: Missing 3 countries (Western_Sahara 170, Channel_Islands 190, Afghanistan 37)
-#   3) Population: 
-#       a) [V] - Set standart with "," and not "."
-#       b) [V] - Take the first population found in infobox [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96655]
-#       c) [V] - Wrong answers: cook_islands -> '17,459', %', 'males','age','females'
-#   4) Date of birth: 
-#       a) [V] - Set standart as "1966-04-28" and not "28_april_1966" - fix for 1966-01-28 and not 1966-1-28
-#       b) [V] - The date of birth will be taken from the "bday" row, if not exist we ignore it [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96463]
-#   5) [V] - Area: Set standart as "923,769 km squared"? and not as "148,460" (bangladesh), "3,796,742 sq mi_(9,833,520 km" (united states) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=93424]
-#   6) [V] - Goverment: Fix query so we won't get cite notes like "#cite_note-bækken2018-7"
-#   7) [V] - Capital: philippines has 2 capitals: "manila" and "metro_manila" - which one to choose? The first one
-#   8) Place of birth:
-#       [V] - a) Create a set of countries from source URL and compare the place of birth to this set, if not there, keep empty [https://moodle.tau.ac.il/mod/forum/discuss.php?d=97142]
-#       [V] - b) Do we need to expand US, USA to united states? No [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
-#   9)  [V] - Multiple result - sort lacsi and divided by "," [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95427]
-#   10) [V] - Empty result in query (no prime minister) won't be tested, and we can choose what to return [https://moodle.tau.ac.il/mod/forum/discuss.php?d=96099]
-#       for now I ignore it, we you want to set somthing otherwise for debug let me know :)
-#   11) [V] - If data is not in info box it doesn't exist & We look for the spesific relation like "President" and not "President of the SAC" (north korea) [https://moodle.tau.ac.il/mod/forum/discuss.php?d=95890]
-#   12) [V] - packeges - can be use with "BeautifulSoup" and "datepip listutil" if needed
-#   13) [V] - Format of result wait for answer [https://moodle.tau.ac.il/mod/forum/discuss.php?d=99213]
-#   14) [V] - Name with qoutes - should we remove the qoutes? "http://example.org/Philip_"Brave"_Davis" [https://moodle.tau.ac.il/mod/forum/discuss.php?d=101393]
 
 # ---------------------------------------- CONSTANTS ----------------------------------------
 CREATE_ARGV           = "create"
@@ -48,35 +19,36 @@ COUNTRY_TYPE          = "country"
 URL_TYPE              = "url"
 
 # ---------------------------------------- XPATH Queries ----------------------------------------
-XPATH_QUERY_COUNTRY_URL                      = '//table[1]//tr/td[1]/span[1]/a/@href'
-XPATH_QUERY_COUNTRY_URL_AFGANISTAN           = '//tr//td//a[@title="Afghanistan"]/@href'
-XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA       = '//tr//td//a[@title="Western Sahara"]/@href'
-XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND       = '//tr//td//a[@title="Channel Islands"]/@href'
+XPATH_QUERY_COUNTRY_URL                           = '//table[1]//tr/td[1]/span[1]/a/@href'
+XPATH_QUERY_COUNTRY_URL_AFGANISTAN                = '//tr//td//a[@title="Afghanistan"]/@href'
+XPATH_QUERY_COUNTRY_URL_WESTERN_SAHARA            = '//tr//td//a[@title="Western Sahara"]/@href'
+XPATH_QUERY_COUNTRY_URL_CHANNEL_ISLAND            = '//tr//td//a[@title="Channel Islands"]/@href'
 
-XPATH_QUERY_COUNTRY_TO_PRESIDENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
-XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER        = '//table[contains(@class, "infobox")][1]//tr//*[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
-XPATH_QUERY_COUNTRY_TO_POPULATION            = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
-XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
-XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2    = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//li[1]//text()'
-XPATH_QUERY_COUNTRY_TO_AREA                  = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
-XPATH_QUERY_COUNTRY_TO_GOVERMENT             = '//table[contains(@class, "infobox")][1]//tr//*[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
-XPATH_QUERY_COUNTRY_TO_CAPITAL               = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr//td[1]/a[contains(@href, "wiki")][1]//@href'
-XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI      = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr/td[1]//li[1]/a/@href'
-XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH          = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr//span[@class="bday"]/text()'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td/text()[last()]'
-XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A     = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td//a[contains(@href, "wiki")][last()]/@href' 
+XPATH_QUERY_COUNTRY_TO_PRESIDENT                  = '//table[contains(@class, "infobox")][1]//tr//*[text()="President"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_PRIME_MINISTER             = '//table[contains(@class, "infobox")][1]//tr//*[text()="Prime Minister"]/ancestor::tr/td//a[contains(@href, "wiki")][1]/@href'
+XPATH_QUERY_COUNTRY_TO_POPULATION                 = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Population")]/following::tr[1]/td[1]/text()[1]'
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE1         = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//span/text()' # add query for channel islands / cook islands? 
+XPATH_QUERY_COUNTRY_TO_POPULATION_UNIQUE2         = '//table[contains(@class, "infobox")][1]//tr//*[text() = "Population"]/following::tr[1]/td//li[1]//text()'
+XPATH_QUERY_COUNTRY_TO_AREA                       = '//table[contains(@class, "infobox")][1]//tr//*[contains(text(), "Area")]/following::tr[1]/td/text()[1]'
+XPATH_QUERY_COUNTRY_TO_GOVERMENT                  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Government"]/ancestor::tr/td//a[contains(@href, "wiki")]/@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL                    = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr//td[1]/a[contains(@href, "wiki")][1]//@href'
+XPATH_QUERY_COUNTRY_TO_CAPITAL_ESWATINI           = '//table[contains(@class, "infobox")][1]//*[text()="Capital"]/ancestor::tr/td[1]//li[1]/a/@href'
+XPATH_QUERY_PERSON_TO_DATE_OF_BIRTH               = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr//span[@class="bday"]/text()'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT       = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td/text()[last()]'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT_FIGI  = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td//a[last()]/text()'
+XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_A          = '//table[contains(@class, "infobox")][1]//tr//*[text()="Born"]/parent::tr/td//a[contains(@href, "wiki")][last()]/@href' 
 
 # ---------------------------------------- Ontology ----------------------------------------
-ONTOLOGY_RELATION_PRESIDENT_OF               = "president_of"
-ONTOLOGY_RELATION_PRIME_MINISTER_OF          = "prime_minister_of"
-ONTOLOGY_RELATION_POPULATION_OF              = "population_of"
-ONTOLOGY_RELATION_AREA_OF                    = "area_of"
-ONTOLOGY_RELATION_GOVERMENT_IN               = "government_in"
-ONTOLOGY_RELATION_CAPITAL_OF                 = "capital_of"
-ONTOLOGY_RELATION_BORN_ON                    = "born_on"
-ONTOLOGY_RELATION_BORN_IN                    = "born_in"
+ONTOLOGY_RELATION_PRESIDENT_OF                    = "president_of"
+ONTOLOGY_RELATION_PRIME_MINISTER_OF               = "prime_minister_of"
+ONTOLOGY_RELATION_POPULATION_OF                   = "population_of"
+ONTOLOGY_RELATION_AREA_OF                         = "area_of"
+ONTOLOGY_RELATION_GOVERMENT_IN                    = "government_in"
+ONTOLOGY_RELATION_CAPITAL_OF                      = "capital_of"
+ONTOLOGY_RELATION_BORN_ON                         = "born_on"
+ONTOLOGY_RELATION_BORN_IN                         = "born_in"
 
-ONTOLOGY_RELATION_PERSON_LST              = [ONTOLOGY_RELATION_PRESIDENT_OF, ONTOLOGY_RELATION_PRIME_MINISTER_OF]
+ONTOLOGY_RELATION_PERSON_LST                      = [ONTOLOGY_RELATION_PRESIDENT_OF, ONTOLOGY_RELATION_PRIME_MINISTER_OF]
 
 # ---------------------------------------- Global ----------------------------------------
 countrySet = set()      # Set of all countries found in SOURCE URL (https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations))
@@ -91,7 +63,7 @@ def cleanName(name, type):
     # 3) Strip and replace spaces as "_"
     if type in ONTOLOGY_RELATION_PERSON_LST: 
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        result = result.split("/")[-1].strip().replace(" ","_")
+        result = result.split("/")[-1].strip().replace(" ","_").replace('"', "")
             
     # Type: ONTOLOGY_RELATION_POPULATION_OF
     # 1) Split string using space delimiter for population contains additioanl data such as validity date (such as: '53,582,855 (2017)'
@@ -128,8 +100,9 @@ def cleanName(name, type):
     # Type: ONTOLOGY_RELATION_CAPITAL_OF
     # 1) Parse as utf-8 for special letters
     # 2) Strip and replace spaces as "_"
-    # 3) Remove wiki prefix
+    # 3) Remove wiki prefix and ")" when found (such as: 'Germany)')
     # 4) Split using delimiter "," to remove dates (such as: 'Republic_of_Egypt_(1953–1958)'), take first none-empty string
+
     elif type == ONTOLOGY_RELATION_BORN_IN:
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
         result = result.split(",")
@@ -137,7 +110,7 @@ def cleanName(name, type):
             result = result[1]
         else: 
             result = result[0]
-        result = result.split("/")[-1].strip().replace(" ", "_")
+        result = result.split("/")[-1].strip().replace(" ", "_").replace(")","")
     
     # Type: ONTOLOGY_RELATION_BORN_ON
     # 1) Strip and replace spaces as "_"
@@ -164,10 +137,8 @@ def cleanName(name, type):
     # 1) Parse as utf-8 for special letters
     # 2) Strip and replace spaces as "_"
     # 3) Remove wiki prefix
-    # 4) Split using delimiter " " to remove dates (such as: 'Republic_of_Egypt_(1953–1958)'), take first none-empty string
     elif type == COUNTRY_TYPE: 
         result = urllib.parse.unquote(name, encoding="utf-8", errors="ignore")
-        # result = result.split("/")[-1].strip().split(" ")[0].replace(" ","_")
         result = result.split("/")[-1].strip().replace(" ","_")
 
     # Type: URL_TYPE
@@ -189,20 +160,30 @@ def addTupleToGraph(graph, entity1, relation, entity2):
         ontologyEntity2 = rdflib.URIRef(f"{ONTOLOGY_PRIFIX}{entity2}")
         graph.add( (ontologyEntity1, ontologyRelation, ontologyEntity2) )
 
+
 # The function InsertPersonEntity run the xpath query and adding the result to the graph. 
 # While relation is ONTOLOGY_RELATION_BORN_IN the function checks if the country of the person was born in is found in the country list, 
 # if not we throw the result and move to the next one. 
 def InsertPersonEntity(graph, doc, personName, query, relation):
     queryResults = doc.xpath(query) 
     for resultUrl in queryResults: 
-        resultName = cleanName(resultUrl, relation)
+        resultName = cleanName(resultUrl, relation)        
         if ( (relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)): 
-            queryResults = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
-            resultName = cleanName(resultUrl, relation)
-            if ( resultName in countrySet ): 
-                addTupleToGraph(graph, personName, relation, resultName)
+            if (personName == "Wiliame_Katonivere"): 
+                # The place of bitrh of the prime minister of Fiji is located in a unique location 
+                queryResults2 = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT_FIGI)
             else: 
-                return                
+                queryResults2 = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT)
+            
+            for resultUrl2 in queryResults2:
+                resultName2 = cleanName(resultUrl2, relation) 
+
+
+                if ( resultName2 in countrySet ):                     
+                    addTupleToGraph(graph, personName, relation, resultName2)
+                else: 
+                    return 
+
         else: 
             addTupleToGraph(graph, personName, relation, resultName)
 
