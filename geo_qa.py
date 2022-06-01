@@ -284,7 +284,8 @@ def whenWhereQuestion(parsed_question, g):
 def listAllQuestion(parsed_question, g):
     if parsed_question[0] == 'countries':           # The pattern from the assignment
         sub_string = ' '.join(parsed_question[7:]).lower()
-        question = "select ?result where { ?capital <http://example.org/capital_of> ?result filter contains(lcase(str(?capital)), '" +sub_string+ "') .}"
+        question = "select ?result where { ?capital <http://example.org/capital_of> ?result " \
+                   "filter contains(lcase(strafter(str(?capital), 'http://example.org/')), '" + sub_string + "') .}"
         return sparqlResultToAnswer(g.query(question))
     elif parsed_question[0] == 'heads':             # The pattern we chose to add
         country = '<' + ONTOLOGY_PRIFIX + "_".join(parsed_question[5:]) + '>'
