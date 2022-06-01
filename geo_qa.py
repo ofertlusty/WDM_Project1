@@ -181,7 +181,7 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
                     resultName2 = resultName2.split("_")[-1].strip()
                 else:
                     resultName2 = cleanName(resultUrl2, relation)
-                if ( resultName2 in countrySet ):
+                if ( resultName2 in countrySet ):                     
                     addTupleToGraph(graph, personName, relation, resultName2)
                 else: 
                     continue 
