@@ -167,11 +167,11 @@ def addTupleToGraph(graph, entity1, relation, entity2):
 # While relation is ONTOLOGY_RELATION_BORN_IN the function checks if the country of the person was born in is found in the country list, 
 # if not we throw the result and move to the next one. 
 def InsertPersonEntity(graph, doc, personName, query, relation):
-    queryResults = doc.xpath(query)
-    for resultUrl in queryResults:
+    queryResults = doc.xpath(query) 
+    for resultUrl in queryResults: 
         resultName = cleanName(resultUrl, relation)
-        if ((relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)):
-            if (personName == "Wiliame_Katonivere"):
+        if ( (relation == ONTOLOGY_RELATION_BORN_IN) and (resultName not in countrySet)): 
+            if (personName == "Wiliame_Katonivere"): 
                 # The place of bitrh of the prime minister of Fiji is located in a unique location 
                 queryResults2 = doc.xpath(XPATH_QUERY_PERSON_TO_COUNTRY_OF_BIRTH_TEXT_FIGI)
             else:
@@ -183,12 +183,10 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
                     resultName2 = resultName2.split("_")[-1].strip()
                 else:
                     resultName2 = cleanName(resultUrl2, relation)
-
-                if (resultName2 in countrySet):
+                if ( resultName2 in countrySet ):                     
                     addTupleToGraph(graph, personName, relation, resultName2)
-                else:
-                    return
-
+                else: 
+                    continue 
         else:
             addTupleToGraph(graph, personName, relation, resultName)
 
