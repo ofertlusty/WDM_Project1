@@ -181,12 +181,10 @@ def InsertPersonEntity(graph, doc, personName, query, relation):
                     resultName2 = resultName2.split("_")[-1].strip()
                 else:
                     resultName2 = cleanName(resultUrl2, relation)
-
-
                 if ( resultName2 in countrySet ):                     
                     addTupleToGraph(graph, personName, relation, resultName2)
                 else: 
-                    return 
+                    continue 
 
         else: 
             addTupleToGraph(graph, personName, relation, resultName)
@@ -337,6 +335,7 @@ def whatIsQuestion(parsed_question, g):
     country += "_".join(parsed_question) + ">"
     question = "select ?result where { ?result "+relationOfQuestion+" "+country+" .}"
     return sparqlResultToAnswer(g.query(question))
+
 
 def sparqlResultToAnswer(x):
     answers = [str(res.result).split("/")[-1] for res in x]
